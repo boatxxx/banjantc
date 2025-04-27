@@ -1,11 +1,6 @@
-// 🔁 ส่วน import และ setup
-const express = require("express");
-const http = require("http");
-const socketIo = require("socket.io");
+// ✅ Import เฉพาะที่จำเป็น
+const { Sequelize, DataTypes, Op } = require("sequelize");
 const webPush = require("web-push");
-const bodyParser = require("body-parser");
-const cors = require("cors");
-const { Sequelize, DataTypes } = require("sequelize");
 
 // ✅ เชื่อมต่อฐานข้อมูล
 const sequelize = new Sequelize({
@@ -15,45 +10,6 @@ const sequelize = new Sequelize({
   password: "",
   database: "boatsucro"
 });
-
-const Notification = sequelize.define('Notification', {
-  id: {
-    type: Sequelize.INTEGER,
-    primaryKey: true,
-  },
-  title: Sequelize.STRING, // ให้แน่ใจว่า `title` มีอยู่ใน Model
-
-  message: Sequelize.STRING,
-  classroom_id: Sequelize.INTEGER,
-}, {
-  timestamps: false, // ปิดการใช้งาน createdAt และ updatedAt
-});
-
-
-// ✅ สร้าง Model Subscription
-const Subscription = sequelize.define("Subscription", {
-  endpoint: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  keys: {
-    type: DataTypes.JSON,
-    allowNull: false,
-  },
-  classroom_id: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-  }
-});
-
-// ✅ สร้าง express app + socket server
-const app = express();
-const server = http.createServer(app);
-const io = socketIo(server);
-
-// ✅ Middleware
-app.use(cors());
-app.use(bodyParser.json());
 
 // ✅ ตั้งค่า Web Push
 const vapidKeys = {
@@ -67,111 +23,21 @@ webPush.setVapidDetails(
   vapidKeys.privateKey
 );
 
-// 📌 ฟังก์ชันดึง subscriptions ของห้องเรียน
-async function getSubscriptionsByClassroom(classroomId) {
-  return await Subscription.findAll({ where: { classroom_id: classroomId } });
-}
-
-// ✅ สมัครรับการแจ้งเตือน
-app.post("/subscribe", async (req, res) => {
-  const subscription = req.body;
-
-  const existing = await Subscription.findOne({
-    where: { endpoint: subscription.endpoint }
-  });
-
-  if (!existing) {
-    await Subscription.create({
-      endpoint: subscription.endpoint,
-      keys: subscription.keys,
-      classroom_id: subscription.classroom_id
-    });
-  }
-
-  res.status(201).json({ message: "Subscribed successfully!" });
+// ✅ สร้าง Models
+const Notification = sequelize.define('Notification', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+  },
+  title: DataTypes.STRING,
+  message: DataTypes.STRING,
+  classroom_id: DataTypes.INTEGER,
+  created_at: DataTypes.DATE
+}, {
+  timestamps: false,
+  tableName: 'notifications' // เผื่อมีการตั้งชื่อตารางเอง
 });
 
-// 📢 ส่ง Push Notification
-async function sendPushNotifications(subscriptions, message) {
-  const payload = JSON.stringify({
-    title: "📢 การแจ้งเตือนการเข้าเรียน",
-    body: message || "คุณมีการแจ้งเตือนเข้าเรียนใหม่"
-  });
-
-  for (const sub of subscriptions) {
-    try {
-      await webPush.sendNotification(sub.endpoint, payload);
-    } catch (err) {
-      console.error("❌ Error sending notification:", err);
-    }
-  }
-}
-
-// ✅ บันทึกแจ้งเตือน + ส่ง
-app.post("/save-notification", async (req, res) => {
-  const { message, classroomId } = req.body;
-
-  await Notification.create({
-    message: message,
-    classroom_id: classroomId,
-    created_at: new Date(),
-  });
-
-  const subscriptions = await getSubscriptionsByClassroom(classroomId);
-  await sendPushNotifications(subscriptions, message);
-
-  res.status(201).json({ message: "Notification saved and sent!" });
-});
-
-// 🎯 Socket.io รับข้อความและแจ้งเตือน
-io.on("connection", (socket) => {
-  console.log("✅ A client connected");
-
-  socket.on("sendMessage", async (message) => {
-    console.log("📩 Message from client:", message);
-
-    const classroomId = message.classroom_id;
-    const subscriptions = await getSubscriptionsByClassroom(classroomId);
-
-    const payload = JSON.stringify({
-      title: "📢 ข้อความใหม่!",
-      body: message.body
-    });
-
-    for (const sub of subscriptions) {
-      try {
-        await webPush.sendNotification(sub.endpoint, payload);
-      } catch (err) {
-        console.error("❌ Error sending push notification:", err);
-      }
-    }
-
-    io.emit(`newMessage_${classroomId}`, message);
-  });
-});
-
-// 🔍 Route เช็คหน้าเว็บ
-app.get("/", (req, res) => {
-  res.send("📢 Socket Server is running!");
-});
-
-app.get("/send-notification", (req, res) => {
-  res.send("Hello, this is the send-notification route!");
-});
-
-// 🚀 เริ่มต้น server
-server.listen(3000, async () => {
-  try {
-    await sequelize.authenticate();
-    await sequelize.sync();
-    console.log("🚀 Server is running on port 3000 and DB is connected");
-  } catch (error) {
-    console.error("❌ Unable to connect to the database:", error);
-  }
-});
-const { Op } = require("sequelize");
-
-// 👇 เพิ่ม Model ใหม่สำหรับ push_subscriptions
 const PushSubscription = sequelize.define("PushSubscription", {
   endpoint: {
     type: DataTypes.STRING,
@@ -193,9 +59,11 @@ const PushSubscription = sequelize.define("PushSubscription", {
   tableName: 'push_subscriptions',
   timestamps: false
 });
-let lastCheckedNotificationId = 0; // กำหนดค่าเริ่มต้น
 
-// ✅ ฟังก์ชันดึงการแจ้งเตือนใหม่ล่าสุด และส่ง Push
+// ✅ ตัวแปรเก็บ id การแจ้งเตือนล่าสุด
+let lastCheckedNotificationId = 0;
+
+// ✅ ฟังก์ชันเช็คและส่งการแจ้งเตือน
 async function checkAndSendNotifications() {
   try {
     const latest = await Notification.findOne({
@@ -204,18 +72,18 @@ async function checkAndSendNotifications() {
 
     if (!latest || latest.id === lastCheckedNotificationId) return;
 
-    lastCheckedNotificationId = latest.id; // อัปเดตว่าอันล่าสุดคืออันนี้
+    lastCheckedNotificationId = latest.id;
 
     const classroomId = latest.classroom_id;
-    const title = latest.title || "คุณมีการแจ้งเตือนใหม่";
-    const url = "https://www.google.com"; // URL ชั่วคราว
+    const title = latest.title || "📢 คุณมีการแจ้งเตือนใหม่";
+    const url = "https://www.google.com"; // หรือ URL ที่ต้องการจริง ๆ
 
     const subscriptions = await PushSubscription.findAll({
       where: { classroom_id: classroomId }
     });
 
     const payload = JSON.stringify({
-      title: `📢 ${title}`,
+      title: title,
       body: "คลิกเพื่อดูรายละเอียด",
       url: url
     });
@@ -241,12 +109,17 @@ async function checkAndSendNotifications() {
   }
 }
 
-setInterval(async () => {
+// ✅ เชื่อมฐานข้อมูลและเริ่มวนลูปเช็คทุก 30 วินาที
+(async () => {
   try {
-    console.log("🔍 กำลังตรวจสอบการแจ้งเตือนใหม่...");
-    await checkAndSendNotifications();
-    console.log("✅ การตรวจสอบเสร็จสิ้น!");
+    await sequelize.authenticate();
+    console.log("✅ Database connected");
+
+    setInterval(async () => {
+      console.log("🔍 กำลังตรวจสอบการแจ้งเตือนใหม่...");
+      await checkAndSendNotifications();
+    }, 30 * 1000); // 30 วินาที
   } catch (error) {
-    console.error("❌ เกิดข้อผิดพลาดในการตรวจสอบการแจ้งเตือน:", error);
+    console.error("❌ Database connection error:", error);
   }
-}, 1 * 30 * 1000); // ทุก 10 นาที (10 * 60 * 1000 มิลลิวินาที)
+})();

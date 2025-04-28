@@ -107,9 +107,54 @@ class NotificationController extends Controller
         return response()->json(['status' => 'Subscription saved successfully!']);
     }
 
-  
-      
+    public function update(Request $request)
+    {
+        $data = $request->validate([
+            'classroom_id' => 'required|integer',
+            'subscription.endpoint' => 'required|string',
+            'subscription.keys.p256dh' => 'required|string',
+            'subscription.keys.auth' => 'required|string',
+        ]);
 
+        // หา subscription จาก endpoint
+        $subscription = PushSubscription::where('endpoint', $data['subscription']['endpoint'])->first();
+
+        if ($subscription) {
+            // เจอ subscription เดิม > แค่อัปเดต classroom_id
+            $subscription->classroom_id = $data['classroom_id'];
+            $subscription->save();
+        } else {
+            // ถ้ายังไม่เคยมี subscription นี้ > สร้างใหม่
+            PushSubscription::create([
+                'endpoint' => $data['subscription']['endpoint'],
+                'keys_p256dh' => $data['subscription']['keys']['p256dh'],
+                'keys_auth' => $data['subscription']['keys']['auth'],
+                'classroom_id' => $data['classroom_id'],
+            ]);
+        }
+
+        return response()->json(['message' => 'Subscription updated successfully']);
+    }
+      
+    public function changeClassroom(Request $request)
+    {
+        $request->validate([
+            'endpoint' => 'required|string',
+            'classroom_id' => 'required|integer',
+        ]);
+    
+        $subscription = PushSubscription::where('endpoint', $request->endpoint)->first();
+    
+        if (!$subscription) {
+            return response()->json(['success' => false, 'message' => 'ไม่พบข้อมูล subscription'], 404);
+        }
+    
+        $subscription->classroom_id = $request->classroom_id;
+        $subscription->save();
+    
+        return response()->json(['success' => true]);
+    }
+    
 
 
 }

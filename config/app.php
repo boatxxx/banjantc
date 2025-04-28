@@ -54,7 +54,7 @@ return [
 
 
 
-    'url' => env('APP_URL', 'http://localhost'),
+'url' => env('APP_URL', 'https://banjantc.com'),
 
     /*
     |--------------------------------------------------------------------------
@@ -67,7 +67,10 @@ return [
     |
     */
 
-    'timezone' => 'Asia/Bangkok',
+    'timezone' => env('APP_TIMEZONE', 'UTC'),
+
+
+
 
     /*
     |--------------------------------------------------------------------------

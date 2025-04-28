@@ -13,6 +13,8 @@ Route::get('/secure-page', [SecurePageController::class, 'show'])->name('home');
 Route::post('/verify-pin', [SecurePageController::class, 'verifyPin'])->name('verify.pin');
 // routes/web.php
 Route::delete('/delete-old-subscription/{classroomId}', [NotificationController::class, 'deleteOldSubscription']);
+Route::post('/api/change-classroom', [NotificationController::class, 'changeClassroom']);
+Route::post('/update-subscription', [NotificationController::class, 'update']);
 
 Route::post('/send-notification', [MQTTController::class, 'sendNotificationToClassroom']);
 Route::get('/mqtt/send', [MQTTController::class, 'sendMessage']);

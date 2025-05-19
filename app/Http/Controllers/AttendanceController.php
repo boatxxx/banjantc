@@ -221,6 +221,8 @@ foreach ($attendanceRecords as $record) {
     
     public function submitAttendance(Request $request)
     {
+        try {
+
         $mode = $request->input('mode'); // รับค่าจาก request
         $classrooms = Classroom::all();
         $activities = Activity::all();
@@ -263,9 +265,6 @@ foreach ($attendanceRecords as $record) {
             $studentFullName = $name . ' ' . $studentLastNames[$index];
     
             // ตรวจสอบว่ามีการเลือกสถานะหรือไม่
-            if (empty($attendance)) {
-                return view('welcome')->with('error', 'ส่งข้อมูลไม่สำเร็จ กรุณาทำการส่งใหม่และกรอกข้อมูลให้ครบถ้วน');
-            }
     
             // เตรียมข้อมูลสำหรับบันทึกการเข้าเรียน
             $attendanceRecords[] = [
@@ -335,12 +334,13 @@ $messageData = json_encode([
     'message' => $message
 ]);
 
-// Log เพื่อตรวจสอบว่าถึงบรรทัดนี้ไหม
 
 
-    
-        return view('welcome', compact('classroomId', 'activityId', 'lecturerId', 'classroom', 'activity', 'lecturer', 'studentLevels', 'classrooms', 'activities', 'teachers', 'students'))
-            ->with('success', 'บันทึกข้อมูลสำเร็จแล้ว');
+return redirect()->route('record')->with('success', 'บันทึกข้อมูลสำเร็จแล้ว');
+} catch (\Exception $e) {
+
+    return redirect()->route('record')->with('error', 'ส่งข้อมูลไม่สำเร็จ กรุณาทำการส่งใหม่และกรอกข้อมูลให้ครบถ้วน');
+}
     }
     protected $mqttService;
 

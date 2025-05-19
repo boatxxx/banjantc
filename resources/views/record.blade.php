@@ -146,30 +146,65 @@ margin-right: 5px;
     margin: 0 auto; /* จัดกึ่งกลาง */
 }
 }
+.alert {
+        padding: 10px;
+        border-radius: 5px;
+        margin-top: 15px;
+        font-weight: bold;
+    }
 
+    .alert-success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    .alert-danger {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
     </style>
 <html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
     <title>ระบบบันทึกข้อมูล</title><!-- record.blade.php -->
 
     
-    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+
+
     <div class="container">
         <header class="header">
             <h1>ระบบบันทึกข้อมูล</h1>
+       
+
         </header>
+        
         <div class="content">
+            @if (session('success'))
+            <div class="alert alert-success">
+                {{ session('success') }}
+            </div>
+        @endif
+        
+        @if (session('error'))
+            <div class="alert alert-danger">
+                {{ session('error') }}
+            </div>
+        @endif
+        
             <h2>เลือกชั้นปี</h2>
             <ul class="grade-selection">
-                <li><a href="{{ route('attendance.index', ['level' => 1, 'mode' => $mode]) }}"> ปวช 1 </a></li>
-                <li><a href="{{ route('attendance.index', ['level' => 2, 'mode' => $mode]) }}"> ปวช 2 </a></li>
-                <li><a href="{{ route('attendance.index', ['level' => 3, 'mode' => $mode]) }}"> ปวช 3 </a></li>
-                <li><a href="{{ route('attendance.index', ['level' => 4, 'mode' => $mode]) }}"> ปวส 1 ปิดปรับปรุง </a></li>
-                <li><a href="{{ route('attendance.index', ['level' => 5, 'mode' => $mode]) }}"> ปวส 2 </a></li>
+                <li><a href="{{ route('attendance.index', ['level' => 1, 'mode' => $mode ?? '']) }}"> ปวช 1 </a></li>
+                <li><a href="{{ route('attendance.index', ['level' => 2, 'mode' => $mode ?? '']) }}"> ปวช 2 </a></li>
+                <li><a href="{{ route('attendance.index', ['level' => 3, 'mode' => $mode ?? '']) }}"> ปวช 3 </a></li>
+                <li><a href="{{ route('attendance.index', ['level' => 4, 'mode' => $mode ?? '']) }}"> ปวส 1 ปิดปรับปรุง </a></li>
+                <li><a href="{{ route('attendance.index', ['level' => 5, 'mode' => $mode ?? '']) }}"> ปวส 2 </a></li>
                 <li><a href="{{ route('attendance.index', ['level' => 6, 'mode' => $mode ?? '']) }}"> กิจกรรม </a></li>
                 
                 

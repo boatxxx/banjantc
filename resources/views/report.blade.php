@@ -128,6 +128,20 @@
 <body>
     <div class="container">
         <h1><i class="fas fa-bell icon"></i>ระบบสรุปข้อมูล</h1>
+        @if (session('success'))
+        <div class="alert alert-success">
+            {{ session('success') }}
+        </div>
+    @endif
+    
+    
+    @if (session('error'))
+        <div class="alert alert-danger mt-3">
+            {{ session('error') }}
+        </div>
+    @endif
+    
+
         <form action="{{ route('port') }}" method="post">
             @csrf
             <label for="classroom">ห้องเรียน:</label>

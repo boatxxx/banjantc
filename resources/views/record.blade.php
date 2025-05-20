@@ -203,7 +203,7 @@ margin-right: 5px;
                 <li><a href="{{ route('attendance.index', ['level' => 1, 'mode' => $mode ?? '']) }}"> ปวช 1 </a></li>
                 <li><a href="{{ route('attendance.index', ['level' => 2, 'mode' => $mode ?? '']) }}"> ปวช 2 </a></li>
                 <li><a href="{{ route('attendance.index', ['level' => 3, 'mode' => $mode ?? '']) }}"> ปวช 3 </a></li>
-                <li><a href="{{ route('attendance.index', ['level' => 4, 'mode' => $mode ?? '']) }}"> ปวส 1 ปิดปรับปรุง </a></li>
+                <li><a href="{{ route('attendance.index', ['level' => 4, 'mode' => $mode ?? '']) }}"> ปวส 1 </a></li>
                 <li><a href="{{ route('attendance.index', ['level' => 5, 'mode' => $mode ?? '']) }}"> ปวส 2 </a></li>
                 <li><a href="{{ route('attendance.index', ['level' => 6, 'mode' => $mode ?? '']) }}"> กิจกรรม </a></li>
                 

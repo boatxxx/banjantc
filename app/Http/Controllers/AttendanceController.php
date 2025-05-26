@@ -288,6 +288,8 @@ foreach ($attendanceRecords as $record) {
                 $absentStudents[] = $studentFullName;
             } elseif ($attendance == 'ลา') {
                 $leaveStudents[] = $studentFullName;
+            } elseif ($attendance == 'รถรับส่ง') {
+                $transportStudents[] = $studentFullName;
             }
         }
     
@@ -303,6 +305,7 @@ foreach ($attendanceRecords as $record) {
         $message .= "📢 นักเรียนทั้งหมด: " . count($studentNames) . " คน\n";
         $message .= "✅ มาเรียน: " . $attendanceCounts['มา'] . " คน\n";
         $message .= "⏰ มาสาย: " . $attendanceCounts['สาย'] . " คน\n";
+        $message .= "⏰ รถรับส่ง: " . $attendanceCounts['รถรับส่ง'] . " คน\n";
         $message .= "❌ ขาดเรียน: " . $attendanceCounts['ขาด'] . " คน\n";
         $message .= "🏖 ลา: " . $attendanceCounts['ลา'] . " คน\n";
         $message .= "📊 รายชื่อนักเรียน (สาย, ขาด, ลา) มีดังนี้:\n";
@@ -320,7 +323,12 @@ foreach ($attendanceRecords as $record) {
                 $message .= "- $absentStudent\n";
             }
         }
-    
+        if (!empty($transportStudents)) {
+            $message .= "✅ รถรับส่ง:\n";
+            foreach ($transportStudents as $absentStudent) {
+                $message .= "- รถรับส่ง $absentStudent\n";
+            }
+        }
         // บันทึกข้อมูลการแจ้งเตือนลงในฐานข้อมูล
         $notification = Notification::create([
             'classroom_id' => $classroomId,

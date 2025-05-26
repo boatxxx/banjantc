@@ -253,8 +253,10 @@ td input[type="radio"] {
                             <th>สาย</th>
                             <th>ขาด</th>
                             <th>ลา</th>
-                            <th @if($activityId != 118) style="display:none;" @endif>รถรับส่ง</th>
-
+                            @if($activityId == 118)
+                            <th>รถรับส่ง</th>
+                        @endif
+                        
                         </tr>
                     </thead>
                     <tbody>

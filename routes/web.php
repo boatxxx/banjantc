@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\StudentController;
+
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Broadcast;
@@ -16,11 +18,11 @@ Route::delete('/delete-old-subscription/{classroomId}', [NotificationController:
 Route::post('/api/change-classroom', [NotificationController::class, 'changeClassroom']);
 Route::post('/update-subscription', [NotificationController::class, 'update']);
 
-Route::post('/send-notification', [MQTTController::class, 'sendNotificationToClassroom']);
-Route::get('/mqtt/send', [MQTTController::class, 'sendMessage']);
+Route::get('/students/manage', [StudentController::class, 'manage'])->name('students.manage');
+Route::post('/students/move/{id}', [StudentController::class, 'move'])->name('students.move');
 
-Route::get('/publish', [MqttController::class, 'publish']);
-Route::get('/subscribe', [MqttController::class, 'subscribe']);
+// สำหรับแก้ไข/ลบ
+Route::resource('students', StudentController::class)->only(['edit', 'update', 'destroy']);
 
 Route::post('parent-notifications', [ParentNotificationController::class, 'store'])->name('parent-notifications.store');
 Route::get('/send-notification1', [NotificationController::class, 'sendNotification']);

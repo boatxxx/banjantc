@@ -4,6 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="csrf-token" content="{{ csrf_token() }}">
+	<meta property="og:title" content="Notifications from วิทยาลัยเทคโนโลยีบ้านจั่น" />
+<meta property="og:description" content="คลิกเพื่อดูการแจ้งเตือนล่าสุดจากวิทยาลัยเทคโนโลยีบ้านจั่น" />
+<meta property="og:image" content="https://www.banjantc.com/images/image.png" />
+<meta property="og:url" content="https://www.banjantc.com/notifications" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="วิทยาลัยเทคโนโลยีบ้านจั่น" />
+
   <title>Notifications</title>
   <style>
     /* === CSS เก็บจากของเดิม + ปรับปรุงนิดหน่อยให้กระชับ === */

@@ -115,6 +115,7 @@
                 <th>สาย</th>
                 <th>ขาด</th>
                 <th>ลา</th>
+
             </tr>
         </thead>
         <tbody>

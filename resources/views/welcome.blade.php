@@ -202,6 +202,10 @@
                 <li><a href="{{ route('report1') }}"><i class="fas fa-chart-bar"></i> ระบบสรุปทั้งหมด</a></li>
 
                 <li><a href="{{ route('notifications.index') }}"><i class="fas fa-chart-bar"></i> ระบบดูการแจ้งเตือน</a></li>
+                <a href="{{ route('students.manage') }}" class="btn btn-success">
+                    🧑‍🎓 จัดการนักเรียน
+                </a>
+                
             </ul>
             @if(isset($error))
             <div id="error-alert" class="alert alert-danger alert-dismissible fade show custom-alert" role="alert">

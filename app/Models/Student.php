@@ -22,4 +22,10 @@ class Student extends Model
     public function registration()
     {
         return $this->belongsTo(Registration::class); // Subject เชื่อมกับ Registration
-    }}
+    }
+    public function classroom()
+{
+    return $this->belongsTo(Classroom::class, 'grade', 'grade');
+}
+
+}

@@ -88,7 +88,6 @@
                 <th>#</th>
                 <th>ชื่อ</th>
                 <th>ห้องเรียน</th>
-                <th>ครูประจำชั้น</th>
                 <th>จัดการ</th>
             </tr>
         </thead>
@@ -98,28 +97,35 @@
                     <td>{{ $index + 1 }}</td>
                     <td>{{ $student->name }} {{ $student->last_name }}</td>
                     <td>{{ $student->grade }}</td>
-                    <td>{{ $student->classroom->teacher->name ?? '-' }}</td>
                     <td>
-                        {{-- ✏️ แก้ไข --}}
-                        <a href="{{ route('students.edit', $student->id) }}" class="btn btn-sm btn-primary">แก้ไข</a>
-
-                        {{-- ❌ ลบ --}}
-                        <form action="{{ route('students.destroy', $student->id) }}" method="POST" class="d-inline">
-                            @csrf @method('DELETE')
-                            <button onclick="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบ?')" class="btn btn-sm btn-danger">ลบ</button>
-                        </form>
-
-                        {{-- 🔄 ย้ายห้อง --}}
-                        <form action="{{ route('students.move', $student->id) }}" method="POST" class="d-inline">
-                            @csrf
-                            <select name="new_grade" onchange="this.form.submit()" class="form-select form-select-sm d-inline w-auto">
-                                <option value="">ย้ายห้อง</option>
-                                @foreach ($classrooms as $room)
-                                    <option value="{{ $room->grade }}">{{ $room->grade }}</option>
-                                @endforeach
-                            </select>
-                        </form>
+                        <div class="d-flex flex-column flex-sm-row gap-1">
+                    
+                            {{-- ✏️ ปุ่มแก้ไข --}}
+                            <a href="{{ route('students.edit', $student->id) }}" class="btn btn-sm btn-outline-primary">
+                                ✏️ แก้ไข
+                            </a>
+                    
+                            {{-- ❌ ปุ่มลบ --}}
+                            <form action="{{ route('students.destroy', $student->id) }}" method="POST" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบ?')">
+                                @csrf
+                                @method('DELETE')
+                                <button class="btn btn-sm btn-outline-danger">❌ ลบ</button>
+                            </form>
+                    
+                            {{-- 🔄 ย้ายห้อง --}}
+                            <form action="{{ route('students.move', $student->id) }}" method="POST">
+                                @csrf
+                                <select name="new_grade" onchange="this.form.submit()" class="form-select form-select-sm">
+                                    <option value="">🔄 ย้ายห้อง</option>
+                                    @foreach ($classrooms as $room)
+                                        <option value="{{ $room->id }}">{{ $room->grade }}</option>
+                                    @endforeach
+                                </select>
+                            </form>
+                    
+                        </div>
                     </td>
+                    
                 </tr>
             @endforeach
         </tbody>

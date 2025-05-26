@@ -13,10 +13,12 @@ use App\Http\Controllers\MqttController;
 use App\Http\Controllers\SecurePageController;
 Route::get('/secure-page', [SecurePageController::class, 'show'])->name('home');
 Route::post('/verify-pin', [SecurePageController::class, 'verifyPin'])->name('verify.pin');
-// routes/web.php
+Route::get('/students/{id}/edit', [StudentController::class, 'edit'])->name('students.edit');
+Route::put('/students/{id}', [StudentController::class, 'update'])->name('students.update');
 Route::delete('/delete-old-subscription/{classroomId}', [NotificationController::class, 'deleteOldSubscription']);
 Route::post('/api/change-classroom', [NotificationController::class, 'changeClassroom']);
 Route::post('/update-subscription', [NotificationController::class, 'update']);
+Route::delete('/students/{id}', [StudentController::class, 'destroy'])->name('students.destroy');
 
 Route::get('/students/manage', [StudentController::class, 'manage'])->name('students.manage');
 Route::post('/students/move/{id}', [StudentController::class, 'move'])->name('students.move');

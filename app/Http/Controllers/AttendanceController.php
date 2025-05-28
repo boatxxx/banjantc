@@ -11,6 +11,8 @@ use App\Models\Classroom;
 use GuzzleHttp\Client;
 use App\Models\Level;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\DB;
+
 use App\Models\Notification;
 use App\Models\UserNotification;
 use App\Events\NewNotification;
@@ -172,7 +174,7 @@ foreach ($attendanceRecords as $record) {
             // ดึงข้อมูลห้องเรียนทั้งหมด
             $classrooms = Classroom::with('teacher')
             ->whereNotBetween('id', [27, 32])  // กรองห้องที่ ID ไม่อยู่ในช่วง 27 ถึง 32
-            ->whereNotBetween('id', [35, 48])  // กรองห้องที่ ID ไม่อยู่ในช่วง 35 ถึง 48
+            ->whereNotBetween('id', [35, 53])  // กรองห้องที่ ID ไม่อยู่ในช่วง 35 ถึง 48
             ->get();
             
             // สร้างรายงานสำหรับแต่ละห้องเรียน
@@ -181,10 +183,15 @@ foreach ($attendanceRecords as $record) {
                 $totalStudents = Student::where('grade', $classroom->id)->count();
     
                 // ดึงข้อมูลการเข้าเรียนจาก AttendanceRecord
-                $attendanceRecords = AttendanceRecord::where('grade', $classroom->id)
-                    ->where('activity_id', $activityId) // กรองตามกิจกรรมที่เลือก
-                    ->whereDate('time', $selectedDate) // กรองตามวันที่เลือก
-                    ->get();
+           $attendanceRecords = AttendanceRecord::select('attendance_records.*')
+    ->join(DB::raw("(SELECT MAX(id) as latest_id
+                    FROM attendance_records
+                    WHERE activity_id = $activityId
+                      AND DATE(time) = '$selectedDate'
+                      AND grade = {$classroom->id}
+                    GROUP BY student_id) as latest_records"), 
+        'attendance_records.id', '=', 'latest_records.latest_id')
+    ->get();
     
                 // นับจำนวนที่มาเรียน
                 $presentCount = $attendanceRecords->where('status', 'มา')->count();

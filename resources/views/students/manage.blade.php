@@ -75,6 +75,7 @@
     
 <div class="container">
     <h2 class="mb-4">ระบบจัดการนักเรียน</h2>
+<a href="{{ route('students.create') }}" class="btn btn-primary mb-3">➕ เพิ่มนักเรียน</a>
 
     {{-- 🔍 แบบฟอร์มค้นหา --}}
     <form method="GET" action="{{ route('students.manage') }}" class="mb-3">
@@ -96,7 +97,7 @@
                 <tr>
                     <td>{{ $index + 1 }}</td>
                     <td>{{ $student->name }} {{ $student->last_name }}</td>
-                    <td>{{ $student->grade }}</td>
+                    <td>{{ $student->grade ?? '-' }}</td>
                     <td>
                         <div class="d-flex flex-column flex-sm-row gap-1">
                     

@@ -11,11 +11,13 @@ class Student extends Model
 
     protected $fillable = [
         'registration_id', // Foreign key to Registration table
-        'semester',        // Add semester here
-        'subject',       
+        'name',        // Add semester here
+        'last_name',       
         'subject_code',    // Subject name
         'grade',           // Grade
-        'teacher',         // Teacher name
+        'teacher',   
+            'level', // ✅ เพิ่มตรงนี้
+      // Teacher name
     ];
 
     // ความสัมพันธ์กับ Registration

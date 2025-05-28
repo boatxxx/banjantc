@@ -7,7 +7,26 @@ use Illuminate\Http\Request;
 
 class StudentController extends Controller
 {
+public function create()
+{
+    $classrooms = Classroom::all(); // ใช้สำหรับเลือกระดับชั้น
+    return view('students.create', compact('classrooms'));
+}
 
+// บันทึกข้อมูลนักเรียนใหม่
+public function store(Request $request)
+{
+    $validated = $request->validate([
+        'name' => 'required|string|max:255',
+        'last_name' => 'required|string|max:255',
+        'grade' => 'required|string',
+    ]);
+    $validated['level'] = 'เทอม 1 2568';
+
+    Student::create($validated);
+
+    return redirect()->route('students.manage')->with('success', 'เพิ่มนักเรียนเรียบร้อยแล้ว');
+}
     public function manage(Request $request)
     {
         $search = $request->input('search');

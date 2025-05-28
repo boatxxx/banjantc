@@ -19,7 +19,8 @@ Route::delete('/delete-old-subscription/{classroomId}', [NotificationController:
 Route::post('/api/change-classroom', [NotificationController::class, 'changeClassroom']);
 Route::post('/update-subscription', [NotificationController::class, 'update']);
 Route::delete('/students/{id}', [StudentController::class, 'destroy'])->name('students.destroy');
-
+Route::get('/students/create', [StudentController::class, 'create'])->name('students.create');
+Route::post('/students/store', [StudentController::class, 'store'])->name('students.store');
 Route::get('/students/manage', [StudentController::class, 'manage'])->name('students.manage');
 Route::post('/students/move/{id}', [StudentController::class, 'move'])->name('students.move');
 

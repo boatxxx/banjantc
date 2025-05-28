@@ -142,4 +142,73 @@
             </tr>
         </tfoot>
     </table>
+ <table border="1" cellpadding="8" cellspacing="0" width="100%">
+    <thead style="background-color: #343a40; color: #fff;">
+        <tr>
+            <th>ห้องเรียน</th>
+            <th>ครูประจำชั้น</th>
+            <th>จำนวนนักเรียน</th>
+            <th>มา</th>
+            <th>สาย</th>
+            <th>ขาด</th>
+            <th>ลา</th>
+        </tr>
+    </thead>
+    <tbody>
+        @php
+            // แยกกลุ่มตามชั้นปี เช่น พ.101 → 01
+            $grouped = collect($reportData)->groupBy(function($item) {
+                return mb_substr($item['classroom'],1,2);
+            });
+        @endphp
+
+        @foreach($grouped as $gradeGroup => $classrooms)
+            <tr style="background-color: #ffc107; color: #000;">
+                <td colspan="7" style="text-align: left;"><strong>ชั้นปี: {{ $gradeGroup }}</strong></td>
+            </tr>
+
+            @php
+                // เตรียมตัวแปรสะสมยอดรวม
+                $total_students = 0;
+                $total_present = 0;
+                $total_late = 0;
+                $total_absent = 0;
+                $total_leave = 0;
+            @endphp
+
+            @foreach($classrooms as $data)
+                <tr>
+                    <td>{{ $data['classroom'] }}</td>
+                    <td>{{ $data['teacher'] }}</td>
+                    <td>{{ $data['total_students'] }}</td>
+                    <td>{{ $data['present'] }}</td>
+                    <td>{{ $data['late'] }}</td>
+                    <td>{{ $data['absent'] }}</td>
+                    <td>{{ $data['leave'] }}</td>
+                </tr>
+
+                @php
+                    // สะสมยอดรวม
+                    $total_students += $data['total_students'];
+                    $total_present += $data['present'];
+                    $total_late += $data['late'];
+                    $total_absent += $data['absent'];
+                    $total_leave += $data['leave'];
+                @endphp
+            @endforeach
+
+            {{-- แสดงยอดรวมของชั้นปี --}}
+            <tr style="background-color: #d1ecf1; color: #0c5460; font-weight: bold;">
+                <td colspan="2" style="text-align: right;">รวมชั้นปี {{ $gradeGroup }}</td>
+                <td>{{ $total_students }}</td>
+                <td>{{ $total_present }}</td>
+                <td>{{ $total_late }}</td>
+                <td>{{ $total_absent }}</td>
+                <td>{{ $total_leave }}</td>
+            </tr>
+        @endforeach
+    </tbody>
+</table>
+
+
 </div>

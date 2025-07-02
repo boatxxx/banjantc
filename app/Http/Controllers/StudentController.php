@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use App\Models\Student;
 use App\Models\Classroom;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class StudentController extends Controller
 {
@@ -29,6 +30,8 @@ public function store(Request $request)
 }
     public function manage(Request $request)
     {
+            $classroomss = Student::select('grade')->distinct()->get();
+
         $search = $request->input('search');
     
         $students = Student::with(['registration', 'classroom.teacher'])
@@ -40,7 +43,7 @@ public function store(Request $request)
     
         $classrooms = Classroom::with('teacher')->get();
     
-        return view('students.manage', compact('students', 'classrooms'));
+        return view('students.manage', compact('students', 'classrooms','classroomss'));
     }
     
     public function move(Request $request, $id)
@@ -82,4 +85,88 @@ public function destroy($id)
 
     return redirect()->route('students.manage')->with('success', 'ลบนักเรียนเรียบร้อยแล้ว');
 }
+public function viewByClassroom($grade)
+{
+    $students = Student::where('grade', $grade)->orderBy('id')->get();
+    $classrooms = Classroom::all();
+
+    return view('students.by_classroom', compact('students', 'grade','classrooms'));
+}
+public function shuffleIdsInClassroom($grade)
+{
+    $students = Student::where('grade', $grade)->orderBy('id')->get();
+
+    if ($students->count() < 2) {
+        return redirect()->back()->with('error', 'มีนักเรียนไม่พอสำหรับการสลับ ID');
+    }
+
+    DB::beginTransaction();
+    try {
+        $originalIds = $students->pluck('id')->toArray();
+        $shuffledIds = $originalIds;
+        shuffle($shuffledIds);
+
+        // เปลี่ยน id เป็นค่าลบชั่วคราว
+        foreach ($originalIds as $i => $id) {
+            DB::table('students')->where('id', $id)->update(['id' => -1 * ($i + 1)]);
+        }
+
+        // เปลี่ยนกลับเป็น id ใหม่แบบสลับ
+        foreach ($shuffledIds as $i => $newId) {
+            DB::table('students')->where('id', -1 * ($i + 1))->update(['id' => $newId]);
+        }
+
+        DB::commit();
+        return redirect()->route('students.byClassroom', $grade)->with('success', 'สลับ ID ในห้อง ' . $grade . ' เรียบร้อย');
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+    }
+}
+public function selectSwap(Request $request)
+{
+    $selectedId = $request->input('student_id');
+
+    // ถ้ายังไม่มี ID แรก → เก็บลง session
+    if (!session()->has('swap_first_id')) {
+        session(['swap_first_id' => $selectedId]);
+        return back()->with('message', 'เลือกคนแรกแล้ว');
+    }
+
+    // ถ้ามี ID แรกแล้ว → ดำเนินการสลับ
+    $firstId = session('swap_first_id');
+    $secondId = $selectedId;
+
+    if ($firstId == $secondId) {
+        return back()->with('error', 'ไม่สามารถสลับกับตัวเองได้');
+    }
+
+    // ดึงนักเรียนทั้งสอง
+    $student1 = Student::findOrFail($firstId);
+    $student2 = Student::findOrFail($secondId);
+
+    // สลับ ID (ใช้วิธีสลับด้วย temporary ID)
+    DB::transaction(function () use ($student1, $student2) {
+        $tempId = 999999999;
+
+        $student1->id = $tempId;
+        $student1->save();
+
+        $student2->id = $student1->getOriginal('id');
+        $student2->save();
+
+        $student1->id = $student2->getOriginal('id');
+        $student1->save();
+    });
+
+    session()->forget('swap_first_id');
+    return back()->with('success', 'สลับเรียบร้อยแล้ว');
+}
+
+public function cancelSwap()
+{
+    session()->forget('swap_first_id');
+    return back()->with('message', 'ยกเลิกการเลือกแล้ว');
+}
+
 }

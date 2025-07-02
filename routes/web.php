@@ -23,9 +23,11 @@ Route::get('/students/create', [StudentController::class, 'create'])->name('stud
 Route::post('/students/store', [StudentController::class, 'store'])->name('students.store');
 Route::get('/students/manage', [StudentController::class, 'manage'])->name('students.manage');
 Route::post('/students/move/{id}', [StudentController::class, 'move'])->name('students.move');
-
-// สำหรับแก้ไข/ลบ
+Route::get('/students-by-classroom/{grade}', [StudentController::class, 'viewByClassroom'])->name('students.byClassroom');
+Route::post('/students-by-classroom/{grade}/shuffle', [StudentController::class, 'shuffleIdsInClassroom'])->name('students.shuffle');
 Route::resource('students', StudentController::class)->only(['edit', 'update', 'destroy']);
+Route::post('/students/select-swap', [StudentController::class, 'selectSwap'])->name('students.swapSelect');
+Route::get('/students/cancel-swap', [StudentController::class, 'cancelSwap'])->name('students.cancelSwap');
 
 Route::post('parent-notifications', [ParentNotificationController::class, 'store'])->name('parent-notifications.store');
 Route::get('/send-notification1', [NotificationController::class, 'sendNotification']);
@@ -59,6 +61,7 @@ Route::get('/importexcel2', function () {
 
 })->name('import');
 use Illuminate\Support\Facades\Http;
+Route::get('/attendance/report-absence-over3days', [AttendanceController::class, 'reportAbsenceOver3Days'])->name('attendance.report.absence_over3days');
 
 
 Route::post('/save-push-subscription', [NotificationController::class, 'saveSubscription']);

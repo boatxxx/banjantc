@@ -81,6 +81,25 @@
     <form method="GET" action="{{ route('students.manage') }}" class="mb-3">
         <input type="text" name="search" class="form-control" placeholder="ค้นหาชื่อนักเรียน / ห้อง / ครู" value="{{ request('search') }}">
     </form>
+<form class="d-flex mb-3" id="classroomSelectForm">
+    <label class="me-2">📚 เลือกห้องเรียน:</label>
+    <select name="grade" class="form-select w-auto" onchange="redirectToClassroom(this.value)">
+        <option value="">-- เลือกห้อง --</option>
+        @foreach ($classroomss as $room)
+            <option value="{{ $room->grade }}">{{ $room->grade }}</option>
+        @endforeach
+    </select>
+</form>
+
+<script>
+    function redirectToClassroom(grade) {
+        if (grade) {
+            window.location.href = "{{ url('students-by-classroom') }}/" + grade;
+        }
+    }
+</script>
+
+
 
     {{-- 🧾 ตารางแสดงนักเรียน --}}
     <table class="table table-bordered">

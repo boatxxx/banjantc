@@ -200,6 +200,10 @@
                 <li><a href="{{ route('record', ['mode' => '007']) }}"><i class="fas fa-book"></i> รายงานการมาเรียน</a></li>
                 <li><a href="{{ route('report') }}"><i class="fas fa-chart-bar"></i> ระบบสรุปรายงาน</a></li>
                 <li><a href="{{ route('report1') }}"><i class="fas fa-chart-bar"></i> ระบบสรุปทั้งหมด</a></li>
+<a href="{{ route('attendance.report.absence_over3days') }}" 
+   class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded inline-block">
+   ตรวจสอบขาด/ลาเกิน 3 วัน
+</a>
 
                 <li><a href="{{ route('notifications.index') }}"><i class="fas fa-chart-bar"></i> ระบบดูการแจ้งเตือน</a></li>
                 <a href="{{ route('students.manage') }}" class="btn btn-success">

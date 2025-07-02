@@ -157,7 +157,7 @@ foreach ($attendanceRecords as $record) {
 
     }
 
-    public function reportAttendance(Request $request)
+      public function reportAttendance(Request $request)
     {
         // ดึงข้อมูลกิจกรรมทั้งหมด
         $activities = Activity::all();
@@ -173,10 +173,12 @@ foreach ($attendanceRecords as $record) {
         if ($activityId && $selectedDate) {
             // ดึงข้อมูลห้องเรียนทั้งหมด
             $classrooms = Classroom::with('teacher')
-            ->whereNotBetween('id', [27, 32])  // กรองห้องที่ ID ไม่อยู่ในช่วง 27 ถึง 32
-            ->whereNotBetween('id', [35, 53])  // กรองห้องที่ ID ไม่อยู่ในช่วง 35 ถึง 48
-            ->get();
-            
+    ->whereNotBetween('id', [27, 32]) // กรองห้องช่วง 27-32
+    ->where(function ($query) {
+        $query->whereNotBetween('id', [35, 57]) // กรองเฉพาะ 35-53
+              ->orWhere('id', 54);              // แสดงห้อง 54 ได้
+    })
+    ->get();
             // สร้างรายงานสำหรับแต่ละห้องเรียน
             foreach ($classrooms as $classroom) {
                 // ดึงจำนวนนักเรียนทั้งหมดในห้อง
@@ -215,6 +217,7 @@ foreach ($attendanceRecords as $record) {
         // ส่งข้อมูลไปยัง Blade view เพื่อแสดงรายงาน
         return view('attendance.report', compact('reportData', 'activities','selectedDate'));
     }
+    
     
    
     public function select(Request $request)
@@ -421,5 +424,49 @@ return redirect()->route('record')->with('success', 'บันทึกข้อ
         return redirect()->back()->with('error', 'ไม่พบข้อมูลการเข้าร่วมหรือมีข้อผิดพลาดในการบันทึกข้อมูล');
     }
     }
+public function reportAbsenceOver3Days(Request $request)
+{
+    // ดึงข้อมูลกิจกรรมทั้งหมด (เผื่อเลือกกรอง)
+    $activities = Activity::all();
+
+    // รับค่าช่วงวันที่จากฟอร์ม
+    $startDate = $request->input('start_date');
+    $endDate = $request->input('end_date');
+    $activityId = $request->input('activity'); // กรองตามกิจกรรม (optional)
+
+    $reportData = [];
+
+    if ($startDate && $endDate) {
+        // เริ่ม query
+        $query = AttendanceRecord::select('student_id', 'grade', DB::raw('COUNT(*) as total_absence'))
+            ->whereBetween(DB::raw('DATE(time)'), [$startDate, $endDate])
+            ->whereIn('status', ['ขาด', 'ลา']);  // เฉพาะขาดหรือลา
+
+        if ($activityId) {
+            $query->where('activity_id', $activityId);
+        }
+
+        // นับแยกตาม student + grade
+        $absences = $query->groupBy('student_id', 'grade')
+            ->having('total_absence', '>=', 3)
+            ->get();
+
+        foreach ($absences as $absence) {
+            $student = Student::find($absence->student_id);
+              $classroom = Classroom::with('teacher')->find($absence->grade);  // โหลดพร้อม teacher
+
+            $reportData[] = [
+                'student_id' => $student->id ?? '-',
+'student_name' => ($student->name ?? '-') . ' ' . ($student->last_name ?? '-'),
+                'classroom_name' => $classroom->grade ?? 'ไม่พบชื่อห้อง',  // ✅ แสดงชื่อห้องเรียน
+                        'teacher_name' => $classroom->teacher->name ?? 'ไม่มีข้อมูล',
+
+                'total_absence' => $absence->total_absence,
+            ];
+        }
+    }
+
+    return view('attendance.absence_over3days', compact('reportData', 'activities', 'startDate', 'endDate', 'activityId'));
+}
 
 }

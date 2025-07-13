@@ -12,6 +12,7 @@
         "league/flysystem": "*",
         "maatwebsite/excel": "*",
         "minishlink/web-push": "^9.0",
+        "nesbot/carbon": "^3.10",
         "php-mqtt/client": "^2.2",
         "predis/predis": "*",
         "pusher/pusher-php-server": "*",

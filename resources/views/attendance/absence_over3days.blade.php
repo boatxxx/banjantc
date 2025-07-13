@@ -93,8 +93,9 @@
                     <th>ชื่อนักเรียน</th>
                     <th>ห้องเรียน</th>
                     <th>อาจารย์ที่ปรึกษา</th>
-
                     <th>จำนวน ขาด+ลา</th>
+                    <th>วันที่ ขาดและลา </th>
+
                 </tr>
             </thead>
             <tbody>
@@ -105,6 +106,12 @@
                             <td>{{ $data['teacher_name'] }}</td>
 
                     <td>{{ $data['total_absence'] }}</td>
+                    <td>
+            @foreach ($data['absence_dates'] as $date)
+                {{ \Carbon\Carbon::parse($date)->format('d/m/Y') }}<br>
+            @endforeach
+        </td>
+        
                 </tr>
                 @endforeach
             </tbody>

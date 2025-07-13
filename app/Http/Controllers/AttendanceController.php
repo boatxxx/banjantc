@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+use Carbon\Carbon;
 
 use Illuminate\Http\Request;
 use App\Models\AttendanceRecord;
@@ -12,6 +13,7 @@ use GuzzleHttp\Client;
 use App\Models\Level;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\DB;
+
 
 use App\Models\Notification;
 use App\Models\UserNotification;
@@ -424,45 +426,96 @@ return redirect()->route('record')->with('success', 'บันทึกข้อ
         return redirect()->back()->with('error', 'ไม่พบข้อมูลการเข้าร่วมหรือมีข้อผิดพลาดในการบันทึกข้อมูล');
     }
     }
+
 public function reportAbsenceOver3Days(Request $request)
 {
-    // ดึงข้อมูลกิจกรรมทั้งหมด (เผื่อเลือกกรอง)
     $activities = Activity::all();
-
-    // รับค่าช่วงวันที่จากฟอร์ม
     $startDate = $request->input('start_date');
     $endDate = $request->input('end_date');
-    $activityId = $request->input('activity'); // กรองตามกิจกรรม (optional)
+    $activityId = $request->input('activity');
 
     $reportData = [];
 
     if ($startDate && $endDate) {
-        // เริ่ม query
-        $query = AttendanceRecord::select('student_id', 'grade', DB::raw('COUNT(*) as total_absence'))
-            ->whereBetween(DB::raw('DATE(time)'), [$startDate, $endDate])
-            ->whereIn('status', ['ขาด', 'ลา']);  // เฉพาะขาดหรือลา
-
-        if ($activityId) {
-            $query->where('activity_id', $activityId);
+        // สร้างช่วงวันที่ทั้งหมดในช่วงนั้น
+        $allDates = [];
+        $date = Carbon::parse($startDate);
+        while ($date->lte(Carbon::parse($endDate))) {
+            $allDates[] = $date->toDateString();
+            $date->addDay();
         }
 
-        // นับแยกตาม student + grade
-        $absences = $query->groupBy('student_id', 'grade')
-            ->having('total_absence', '>=', 3)
+        // Subquery: ดึงรอบล่าสุดต่อวัน ที่มี status = ขาด/ลา
+        $subQuery = AttendanceRecord::select(
+                'student_id',
+                'grade',
+                DB::raw('DATE(time) as date'),
+                'status',
+                'activity_id',
+                'time',
+                DB::raw('ROW_NUMBER() OVER (PARTITION BY student_id, DATE(time) ORDER BY time DESC) as rn')
+            )
+            ->whereBetween(DB::raw('DATE(time)'), [$startDate, $endDate])
+            ->whereIn('status', ['ขาด', 'ลา']);
+
+        if ($activityId) {
+            $subQuery->where('activity_id', $activityId);
+        }
+
+        $records = DB::table(DB::raw("({$subQuery->toSql()}) as latest_records"))
+            ->mergeBindings($subQuery->getQuery())
+            ->where('rn', 1)
             ->get();
 
-        foreach ($absences as $absence) {
-            $student = Student::find($absence->student_id);
-              $classroom = Classroom::with('teacher')->find($absence->grade);  // โหลดพร้อม teacher
+        // Group ข้อมูลตาม student
+        $studentAbsences = [];
+        foreach ($records as $record) {
+            $studentAbsences[$record->student_id]['grade'] = $record->grade;
+            $studentAbsences[$record->student_id]['dates'][] = $record->date;
+        }
 
-            $reportData[] = [
-                'student_id' => $student->id ?? '-',
-'student_name' => ($student->name ?? '-') . ' ' . ($student->last_name ?? '-'),
-                'classroom_name' => $classroom->grade ?? 'ไม่พบชื่อห้อง',  // ✅ แสดงชื่อห้องเรียน
-                        'teacher_name' => $classroom->teacher->name ?? 'ไม่มีข้อมูล',
+        foreach ($studentAbsences as $studentId => $data) {
+            $absenceDates = collect($data['dates'])->sort()->values(); // วันที่ขาด/ลา
+            $absenceSet = collect($absenceDates)->flip(); // ใช้สำหรับเช็คเร็ว
+            $totalAbsence = $absenceDates->count();
 
-                'total_absence' => $absence->total_absence,
-            ];
+            // ตรวจสอบ "ติดต่อกัน >= 3 วัน"
+            $consecutiveCount = 0;
+            $maxConsecutive = 0;
+            $consecutiveDates = [];
+
+            $currentRun = [];
+
+            foreach ($allDates as $date) {
+                if ($absenceSet->has($date)) {
+                    $consecutiveCount++;
+                    $currentRun[] = $date;
+                    if ($consecutiveCount > $maxConsecutive) {
+                        $maxConsecutive = $consecutiveCount;
+                        $consecutiveDates = $currentRun;
+                    }
+                } else {
+                    $consecutiveCount = 0;
+                    $currentRun = [];
+                }
+            }
+
+            // ตรวจสอบเงื่อนไข: ขาด/ลาติดกัน >= 3 วัน หรือ รวมเกิน 3 วัน
+            if ($totalAbsence >= 3 || $maxConsecutive >= 3) {
+                $student = Student::find($studentId);
+                $classroom = Classroom::with('teacher')->find($data['grade']);
+
+                $reportData[] = [
+                    'student_id' => $student->id ?? '-',
+                    'student_name' => ($student->name ?? '-') . ' ' . ($student->last_name ?? '-'),
+                    'classroom_name' => $classroom->grade ?? 'ไม่พบชื่อห้อง',
+                    'teacher_name' => $classroom->teacher->lecturer ?? 'ไม่มีข้อมูล',
+                    'total_absence' => $totalAbsence,
+                    'absence_dates' => $absenceDates->toArray(),
+                    'max_consecutive' => $maxConsecutive,
+                    'consecutive_dates' => $consecutiveDates,
+                ];
+            }
         }
     }
 

@@ -427,6 +427,7 @@ return redirect()->route('record')->with('success', 'บันทึกข้อ
     }
     }
 
+
 public function reportAbsenceOver3Days(Request $request)
 {
     $activities = Activity::all();
@@ -437,7 +438,6 @@ public function reportAbsenceOver3Days(Request $request)
     $reportData = [];
 
     if ($startDate && $endDate) {
-        // สร้างช่วงวันที่ทั้งหมดในช่วงนั้น
         $allDates = [];
         $date = Carbon::parse($startDate);
         while ($date->lte(Carbon::parse($endDate))) {
@@ -445,7 +445,21 @@ public function reportAbsenceOver3Days(Request $request)
             $date->addDay();
         }
 
-        // Subquery: ดึงรอบล่าสุดต่อวัน ที่มี status = ขาด/ลา
+        // 1. ดึงรายชื่อ student ที่มีบันทึกสถานะใด ๆ ในช่วงวันที่กำหนด (มา, ขาด, ลา)
+        $studentsQuery = AttendanceRecord::select('student_id')
+            ->whereBetween(DB::raw('DATE(time)'), [$startDate, $endDate]);
+
+        if ($activityId) {
+            $studentsQuery->where('activity_id', $activityId);
+        }
+
+        $studentIds = $studentsQuery->distinct()->pluck('student_id')->toArray();
+
+        if (empty($studentIds)) {
+            return view('attendance.absence_over3days', compact('reportData', 'activities', 'startDate', 'endDate', 'activityId'));
+        }
+
+        // 2. ดึงรอบล่าสุดของแต่ละวัน ของ student ทั้งหมดที่มีบันทึกในช่วง
         $subQuery = AttendanceRecord::select(
                 'student_id',
                 'grade',
@@ -456,7 +470,7 @@ public function reportAbsenceOver3Days(Request $request)
                 DB::raw('ROW_NUMBER() OVER (PARTITION BY student_id, DATE(time) ORDER BY time DESC) as rn')
             )
             ->whereBetween(DB::raw('DATE(time)'), [$startDate, $endDate])
-            ->whereIn('status', ['ขาด', 'ลา']);
+            ->whereIn('student_id', $studentIds);
 
         if ($activityId) {
             $subQuery->where('activity_id', $activityId);
@@ -467,23 +481,46 @@ public function reportAbsenceOver3Days(Request $request)
             ->where('rn', 1)
             ->get();
 
-        // Group ข้อมูลตาม student
-        $studentAbsences = [];
+        $studentDailyStatus = [];
+        $studentGrades = [];
+
         foreach ($records as $record) {
-            $studentAbsences[$record->student_id]['grade'] = $record->grade;
-            $studentAbsences[$record->student_id]['dates'][] = $record->date;
+            $studentGrades[$record->student_id] = $record->grade;
+            $studentDailyStatus[$record->student_id][$record->date] = $record->status;
         }
 
-        foreach ($studentAbsences as $studentId => $data) {
-            $absenceDates = collect($data['dates'])->sort()->values(); // วันที่ขาด/ลา
-            $absenceSet = collect($absenceDates)->flip(); // ใช้สำหรับเช็คเร็ว
+        foreach ($studentIds as $studentId) {
+            $grade = $studentGrades[$studentId] ?? null;
+
+            // เตรียมสถานะรายวันครบช่วงวันที่
+            $dailyStatus = [];
+            foreach ($allDates as $date) {
+                if (isset($studentDailyStatus[$studentId][$date])) {
+                    $status = $studentDailyStatus[$studentId][$date];
+                    if (in_array($status, ['ขาด', 'ลา'])) {
+                        $dailyStatus[$date] = $status;
+                    } else {
+                        $dailyStatus[$date] = 'มา';
+                    }
+                } else {
+                    $dailyStatus[$date] = 'ไม่มีข้อมูล';
+                }
+            }
+
+            // หาวันที่เป็นขาด/ลา
+            $absenceDates = collect($dailyStatus)
+                ->filter(fn($status) => in_array($status, ['ขาด', 'ลา']))
+                ->keys()
+                ->sort()
+                ->values();
+
             $totalAbsence = $absenceDates->count();
 
-            // ตรวจสอบ "ติดต่อกัน >= 3 วัน"
+            // เช็ควันขาด/ลาติดต่อกัน >= 3 วัน
+            $absenceSet = collect($absenceDates)->flip();
             $consecutiveCount = 0;
             $maxConsecutive = 0;
             $consecutiveDates = [];
-
             $currentRun = [];
 
             foreach ($allDates as $date) {
@@ -500,10 +537,10 @@ public function reportAbsenceOver3Days(Request $request)
                 }
             }
 
-            // ตรวจสอบเงื่อนไข: ขาด/ลาติดกัน >= 3 วัน หรือ รวมเกิน 3 วัน
+            // เงื่อนไข: เอาคนที่ขาด/ลาเกินหรือเท่ากับ 3 วัน หรือ ขาด/ลาติดต่อกัน 3 วันขึ้นไป
             if ($totalAbsence >= 3 || $maxConsecutive >= 3) {
                 $student = Student::find($studentId);
-                $classroom = Classroom::with('teacher')->find($data['grade']);
+                $classroom = Classroom::with('teacher')->find($grade);
 
                 $reportData[] = [
                     'student_id' => $student->id ?? '-',
